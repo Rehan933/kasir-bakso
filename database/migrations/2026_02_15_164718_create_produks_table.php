@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('produks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId("User_id")->constrained()->onDelete("cascade");
+            $table->foreignId("User_id")->references("id")->on("users")->onDelete("cascade");
             $table->string("nama_produk");
             $table->integer("harga");
             $table->integer("stok");
