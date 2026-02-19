@@ -8,3 +8,4 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 Route::apiResource('produk', App\Http\Controllers\Api\ProdukController::class);
+Route::apiResource('mutasi-stok', App\Http\Controllers\Api\Mutasi_StokController::class);
