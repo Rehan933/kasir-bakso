@@ -32,4 +32,10 @@ class Mutasi_StokController extends Controller
         return new ApiResource($mutasi_stok, true, 'Mutasi stok berhasil ditambahkan');
     }
 
+    public function show($id)
+    {
+        $mutasi_stok = Mutasi_Stok::findOrFail($id);
+        return new ApiResource($mutasi_stok, true, 'Data mutasi stok berhasil diambil');
+    }
+
 }
