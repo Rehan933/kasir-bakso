@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('mutasi__stoks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId("User_id")->references("id")->on("users")->onDelete("cascade");
             $table->foreignId("Produk_id")->references("id")->on("produks")->onDelete("cascade");
             $table->integer("qty");
             $table->integer("sisa");

@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('detail__transaksis', function (Blueprint $table) {
-            $table->foreignId("User_id")->references("id")->on("users")->onDelete("cascade");
             $table->foreignId("Transaksi_id")->references("id")->on("transaksis")->onDelete("cascade");
             $table->foreignId("Produk_id")->references("id")->on("produks")->onDelete("cascade");
             $table->integer("qty");
@@ -21,7 +20,7 @@ return new class extends Migration
         });
     }
 
-    /**
+    /**AAAAa
      * Reverse the migrations.
      */
     public function down(): void

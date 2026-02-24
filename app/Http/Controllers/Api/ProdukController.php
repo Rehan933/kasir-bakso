@@ -17,21 +17,25 @@ class ProdukController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nama_produk' => 'required',
-            'harga' => 'required|numeric',
-            'stok' => 'required|numeric',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'nama_produk' => 'required|string|max:255',
+        'harga' => 'required|numeric|min:0',
+        'stok' => 'required|integer|min:0',
+    ]);
 
-        if ($validator->fails()) {
-            return new ApiResource($validator->errors(), false, 'Validasi gagal');
-        }
-
-        $produk = Produk::create($request->all());
-
-        return new ApiResource($produk, true, 'Produk berhasil ditambahkan');
+    if ($validator->fails()) {
+        return new ApiResource($validator->errors(), false, 'Validasi gagal');
     }
+
+    $produk = Produk::create([
+        'nama_produk' => $request->nama_produk,
+        'harga' => $request->harga,
+        'stok' => $request->stok,
+    ]);
+
+    return new ApiResource($produk, true, 'Produk berhasil ditambahkan');
+}
 
     public function show($id)
     {

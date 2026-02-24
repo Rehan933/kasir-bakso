@@ -23,9 +23,9 @@ class TransaksiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'tanggal'                          => 'required|date',
-            'jenis_pembelian_id'               => 'required|exists:jenis_pembelian,id',
+            'nama_jenis_pembelian'             => 'required|string|max:255',
             'detail_transaksi'                 => 'required|array|min:1',
-            'detail_transaksi.*.produk_id'     => 'required|exists:produks,id',
+            'detail_transaksi.*.Produk_id'     => 'required|exists:produks,id',
             'detail_transaksi.*.qty'           => 'required|integer|min:1',
         ]);
 
@@ -36,20 +36,18 @@ class TransaksiController extends Controller
         DB::beginTransaction();
 
         try {
-
-
             $transaksi = Transaksi::create([
-                'user_id' => auth()->id(),
+                'User_id' => auth()->id(),
                 'tanggal' => $request->tanggal,
-                'jenis_pembelian_id' => $request->jenis_pembelian_id,
-                'total' => 0
+                'nama_jenis_pembelian' => $request->nama_jenis_pembelian,
+                'total_harga' => 0
             ]);
 
             $total = 0;
 
             foreach ($request->detail_transaksi as $detail) {
 
-                $produk = Produk::lockForUpdate()->findOrFail($detail['produk_id']);
+                $produk = Produk::lockForUpdate()->findOrFail($detail['Produk_id']);
 
 
                 if ($produk->stok < $detail['qty']) {
@@ -62,8 +60,8 @@ class TransaksiController extends Controller
                 $subtotal = $detail['qty'] * $produk->harga;
 
                 Detail_Transaksi::create([
-                    'transaksi_id' => $transaksi->id,
-                    'produk_id' => $produk->id,
+                    'Transaksi_id' => $transaksi->id,
+                    'Produk_id' => $produk->id,
                     'qty' => $detail['qty'],
                     'subtotal' => $subtotal,
                 ]);
@@ -72,11 +70,11 @@ class TransaksiController extends Controller
                 $produk->decrement('stok', $detail['qty']);
 
                 $total += $subtotal;
+                $transaksi->update(['total_harga' => $total]);
             }
 
 
-            $transaksi->update(['total' => $total]);
-
+            $transaksi->update(['total_harga' => $total]);
             DB::commit();
 
             return new ApiResource(
