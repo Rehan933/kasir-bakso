@@ -27,7 +27,7 @@ class Mutasi_StokController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return new ApiResource($validator->errors(), false, 'Validasi gagal');
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
 
@@ -50,7 +50,7 @@ class Mutasi_StokController extends Controller
                 'stok' => $sisa
             ]);
 
-          
+
             $mutasi_stok = Mutasi_Stok::create([
                 'Produk_id' => $produk->id,
                 'qty' => $request->qty,

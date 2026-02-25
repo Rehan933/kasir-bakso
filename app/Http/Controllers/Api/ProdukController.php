@@ -25,7 +25,7 @@ class ProdukController extends Controller
     ]);
 
     if ($validator->fails()) {
-        return new ApiResource($validator->errors(), false, 'Validasi gagal');
+        return response()->json(['errors' => $validator->errors()], 422);
     }
 
     $produk = Produk::create([
@@ -47,6 +47,10 @@ class ProdukController extends Controller
     {
         $produk = Produk::findOrFail($id);
 
+        if (is_null($produk)) {
+            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
+        }
+
         $validator = Validator::make($request->all(), [
             'nama_produk' => 'required',
             'harga' => 'required|numeric',
@@ -54,7 +58,7 @@ class ProdukController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return new ApiResource($validator->errors(), false, 'Validasi gagal');
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $produk->update($request->all());

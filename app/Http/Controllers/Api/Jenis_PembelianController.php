@@ -23,7 +23,7 @@ class Jenis_PembelianController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return new ApiResource($validator->errors(), false, 'Validasi gagal');
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $jenis_pembelian = Jenis_Pembelian::create($request->all());
