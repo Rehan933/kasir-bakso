@@ -20,77 +20,93 @@ class TransaksiController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'tanggal'                          => 'required|date',
-            'nama_jenis_pembelian'             => 'required|string|max:255',
-            'detail_transaksi'                 => 'required|array|min:1',
-            'detail_transaksi.*.Produk_id'     => 'required|exists:produks,id',
-            'detail_transaksi.*.qty'           => 'required|integer|min:1',
+{
+    $validator = Validator::make($request->all(), [
+        'tanggal'                          => 'required|date',
+        'nama_jenis_pembelian'             => 'required|string|max:255',
+        'detail_transaksi'                 => 'required|array|min:1',
+        'detail_transaksi.*.Produk_id'     => 'required|exists:produks,id',
+        'detail_transaksi.*.qty'           => 'required|integer|min:1',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $transaksi = Transaksi::create([
+            'User_id' => 1,
+            'tanggal' => $request->tanggal,
+            'nama_jenis_pembelian' => $request->nama_jenis_pembelian,
+            'total_harga' => 0
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+        $total = 0;
 
-        DB::beginTransaction();
+        foreach ($request->detail_transaksi as $detail) {
 
-        try {
-            $transaksi = Transaksi::create([
-                'User_id' => auth()->id(),
-                'tanggal' => $request->tanggal,
-                'nama_jenis_pembelian' => $request->nama_jenis_pembelian,
-                'total_harga' => 0
-            ]);
+            $produk = Produk::lockForUpdate()->findOrFail($detail['Produk_id']);
 
-            $total = 0;
-
-            foreach ($request->detail_transaksi as $detail) {
-
-                $produk = Produk::lockForUpdate()->findOrFail($detail['Produk_id']);
-
-
-                if ($produk->stok < $detail['qty']) {
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Stok produk ' . $produk->nama . ' tidak mencukupi'
-                    ], 400);
-                }
-
-                $subtotal = $detail['qty'] * $produk->harga;
-
-                Detail_Transaksi::create([
-                    'Transaksi_id' => $transaksi->id,
-                    'Produk_id' => $produk->id,
-                    'qty' => $detail['qty'],
-                    'subtotal' => $subtotal,
-                ]);
-
-
-                $produk->decrement('stok', $detail['qty']);
-
-                $total += $subtotal;
-                $transaksi->update(['total_harga' => $total]);
+            // cek stok
+            if ($produk->stok < $detail['qty']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Stok produk ' . $produk->nama_produk . ' tidak mencukupi'
+                ], 400);
             }
 
+            $subtotal = $detail['qty'] * $produk->harga;
 
-            $transaksi->update(['total_harga' => $total]);
-            DB::commit();
+            // simpan detail
+            Detail_Transaksi::create([
+                'Transaksi_id' => $transaksi->id,
+                'Produk_id' => $produk->id,
+                'qty' => $detail['qty'],
+                'subtotal' => $subtotal,
+            ]);
 
-            return new ApiResource(
-                $transaksi->load(['user', 'detailTransaksi.produk']),
-                true,
-                'Transaksi berhasil ditambahkan'
-            );
+            // kurangi stok
+            $produk->decrement('stok', $detail['qty']);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Terjadi kesalahan',
-                'error' => $e->getMessage()
-            ], 500);
+            $total += $subtotal;
         }
+
+        // update total sekali saja
+        $transaksi->update([
+            'total_harga' => $total
+        ]);
+
+        DB::commit();
+
+        return new ApiResource(
+            $transaksi->load(['user', 'detailTransaksi.produk']),
+            true,
+            'Transaksi berhasil ditambahkan'
+        );
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Terjadi kesalahan',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
+public function dashboard()
+{
+    $totalTransaksi = Transaksi::count();
+    $totalProduk = Produk::count();
+    $totalPenjualan = Transaksi::sum('total_harga');
+
+    return response()->json([
+        'total_transaksi' => $totalTransaksi,
+        'total_produk' => $totalProduk,
+        'total_penjualan' => $totalPenjualan
+    ]);
+}
 
     public function show($id)
     {
